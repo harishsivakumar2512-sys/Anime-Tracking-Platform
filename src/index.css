@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary-purple: #7c3aed;
+    --primary-hover: #6d28d9;
+    --bg-dark: #090810;
+    --card-dark: #121024;
+    --border-dark: rgba(139, 92, 246, 0.15);
+  }
+
+  body {
+    background-color: #090810;
+    color: #f1f5f9;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #090810;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #231d42;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
+}
+
+/* Card Glow & Glass effects */
+.glass-panel {
+  background: rgba(18, 16, 36, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(139, 92, 246, 0.12);
+}
+
+.glass-panel-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-hover:hover {
+  border-color: rgba(167, 139, 250, 0.35);
+  box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.18);
+  transform: translateY(-2px);
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2.2s infinite;
+}
+
+/* Custom pulse glow */
+@keyframes purpleGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(124, 58, 237, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(124, 58, 237, 0.6); }
+}
+
+.glow-purple {
+  animation: purpleGlow 3s infinite ease-in-out;
+}

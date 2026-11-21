@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AniTrack — Track • Discover • Enjoy</title>
+  <link rel="icon" type="image/png" href="./assets/logo.png">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            appDark: '#090810',
+            appCard: '#131124',
+            appBorder: '#231e3d',
+            accent: {
+              DEFAULT: '#7c3aed',
+              hover: '#6d28d9',
+              light: '#a78bfa',
+              glow: 'rgba(124, 58, 237, 0.4)'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18, ReactDOM & Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Canvas Confetti for FR10 (auto-complete celebration) -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <style>
+    body {
+      background-color: #090810;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090810;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #231d42;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #7c3aed;
+    }
+
+    .glass-card {
+      background: rgba(19, 17, 36, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(139, 92, 246, 0.12);
+    }
+
+    .glass-card:hover {
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+  </style>
+</head>
+<body class="bg-[#090810] text-gray-100 min-h-screen">
+  <div id="root"></div>
+
+  <!-- Main App Script -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    // SVG Icons Helper Components
+    const Icons = {
+      Home: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      ),
+      Compass: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+        </svg>
+      ),
+      Bookmark: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+        </svg>
+      ),
+      BarChart: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/>
+        </svg>
+      ),
+      User: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      ),
+      Settings: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+      ),
+      Search: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+      ),
+      Bell: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+        </svg>
+      ),
+      Play: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="6 3 20 12 6 21 6 3"/>
+        </svg>
+      ),
+      Check: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      ),
+      Star: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      ),
+      Plus: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+        </svg>
+      ),
+      Minus: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="5" x2="19" y1="12" y2="12"/>
+        </svg>
+      ),
+      Trash: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+      ),
+      Crown: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/>
+        </svg>
+      ),
+      Close: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/>
+        </svg>
+      ),
+      ChevronRight: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      )
+    };
+
+    // Master Anime Database
+    const MASTER_ANIME = [
+      {
+        id: 'one-piece',
+        title: 'One Piece',
+        rating: 9.0,
+        totalEpisodes: 1080,
+        image: './assets/pop_one_piece.png',
+        banner: './assets/hero_banner.png',
+        status: 'Currently Airing',
+        genres: ['Action', 'Adventure', 'Fantasy', 'Comedy'],
+        studio: 'Toei Animation',
+        year: 1999,
+        synopsis: 'Monkey D. Luffy refuses to let anyone or anything stand in the way of his quest to become the King of the Pirates. With his straw hat and rubber powers, he gathers a legendary crew to find the One Piece.'
+      },
+      {
+        id: 'naruto-shippuden',
+        title: 'Naruto Shippuden',
+        rating: 8.9,
+        totalEpisodes: 500,
+        image: './assets/pop_naruto.png',
+        banner: './assets/hero_banner.png',
+        status: 'Finished Airing',
+        genres: ['Action', 'Adventure', 'Martial Arts', 'Shounen'],
+        studio: 'Studio Pierrot',
+        year: 2007,
+        synopsis: 'After two and a half years of intense training with Jiraiya, Naruto returns to the Leaf Village to face the looming threat of the Akatsuki organization and bring Sasuke home.'
+      },
+      {
+        id: 'demon-slayer',
+        title: 'Demon Slayer',
+        rating: 8.8,
+        totalEpisodes: 26,
+        image: './assets/pop_demon_slayer.png',
+        cwImage: './assets/cw_demon_slayer.png',
+        banner: './assets/cw_demon_slayer.png',
+        status: 'Finished Airing',
+        genres: ['Action', 'Dark Fantasy', 'Historical', 'Supernatural'],
+        studio: 'ufotable',
+        year: 2019,
+        synopsis: 'After demons slaughter his family and turn his sister Nezuko into a demon, Tanjiro Kamado trains to become a Demon Slayer to avenge his family and cure his sister.'
+      },
+      {
+        id: 'jujutsu-kaisen',
+        title: 'Jujutsu Kaisen',
+        rating: 8.9,
+        totalEpisodes: 24,
+        image: './assets/pop_jujutsu_kaisen.png',
+        cwImage: './assets/cw_jujutsu_kaisen.png',
+        banner: './assets/cw_jujutsu_kaisen.png',
+        status: 'Finished Airing',
+        genres: ['Action', 'Dark Fantasy', 'Supernatural', 'Shounen'],
+        studio: 'MAPPA',
+        year: 2020,
+        synopsis: 'High school student Yuji Itadori swallows a cursed talisman—the finger of Ryomen Sukuna—and joins Jujutsu High to learn how to control cursed energy under Satoru Gojo.'
+      },
+      {
+        id: 'attack-on-titan',
+        title: 'Attack on Titan',
+        rating: 9.1,
+        totalEpisodes: 87,
+        image: './assets/pop_aot.png',
+        banner: './assets/hero_banner.png',
+        status: 'Finished Airing',
+        genres: ['Action', 'Drama', 'Mystery', 'Military'],
+        studio: 'WIT Studio / MAPPA',
+        year: 2013,
+        synopsis: 'Humanity lives inside walls to protect themselves from gigantic humanoids called Titans. Eren Yeager vows to eradicate every single Titan after witnessing the fall of Wall Maria.'
+      },
+      {
+        id: 'spy-x-family',
+        title: 'Spy x Family',
+        rating: 8.7,
+        totalEpisodes: 25,
+        image: './assets/pop_spy_family.png',
+        banner: './assets/hero_banner.png',
+        status: 'Finished Airing',
+        genres: ['Action', 'Comedy', 'Spy', 'Slice of Life'],
+        studio: 'WIT Studio / CloverWorks',
+        year: 2022,
+        synopsis: 'A spy known as Twilight must create a fake family for his mission, unaware that his new wife is a deadly assassin and his adopted daughter is a telepath.'
+      },
+      {
+        id: 'chainsaw-man',
+        title: 'Chainsaw Man',
+        rating: 8.6,
+        totalEpisodes: 12,
+        image: 'https://cdn.myanimelist.net/images/anime/1806/126216.jpg',
+        banner: './assets/hero_banner.png',
+        status: 'Finished Airing',
+        genres: ['Action', 'Supernatural', 'Dark Fantasy'],
+        studio: 'MAPPA',
+        year: 2022,
+        synopsis: 'Denji makes a pact with Pochita, the Chainsaw Devil, transforming him into Chainsaw Man to hunt devils for Public Safety.'
+      },
+      {
+        id: 'solo-leveling',
+        title: 'Solo Leveling',
+        rating: 8.5,
+        totalEpisodes: 12,
+        image: 'https://cdn.myanimelist.net/images/anime/1897/140224.jpg',
+        banner: './assets/hero_banner.png',
+        status: 'Currently Airing',
+        genres: ['Action', 'Adventure', 'Fantasy'],
+        studio: 'A-1 Pictures',
+        year: 2024,
+        synopsis: 'Sung Jinwoo, the weakest E-rank hunter, is granted the mysterious ability to see an interface that allows him to level up infinitely.'
+      },
+      {
+        id: 'bleach-tybw',
+        title: 'Bleach: TYBW',
+        rating: 9.0,
+        totalEpisodes: 39,
+        image: 'https://cdn.myanimelist.net/images/anime/1908/135406.jpg',
+        banner: './assets/hero_banner.png',
+        status: 'Currently Airing',
+        genres: ['Action', 'Supernatural', 'Shounen'],
+        studio: 'Studio Pierrot',
+        year: 2022,
+        synopsis: 'The Quincy army under Yhwach attacks the Soul Society in an epic war that will determine the fate of all three realms.'
+      },
+      {
+        id: 'frieren',
+        title: "Frieren: Beyond Journey's End",
+        rating: 9.3,
+        totalEpisodes: 28,
+        image: 'https://cdn.myanimelist.net/images/anime/1015/138075.jpg',
+        banner: './assets/hero_banner.png',
+        status: 'Finished Airing',
+        genres: ['Adventure', 'Drama', 'Fantasy'],
+        studio: 'Madhouse',
+        year: 2023,
+        synopsis: 'An elf mage named Frieren reflects on time, mortality, and the memories of her former comrades after their decade-long quest ends.'
+      },
+      {
+        id: 'death-note',
+        title: 'Death Note',
+        rating: 9.0,
+        totalEpisodes: 37,
+        image: 'https://cdn.myanimelist.net/images/anime/9/9453.jpg',
+        banner: './assets/hero_banner.png',
+        status: 'Finished Airing',
+        genres: ['Mystery', 'Psychological', 'Thriller'],
+        studio: 'Madhouse',
+        year: 2006,
+        synopsis: 'A high school prodigy uses a mystical notebook that kills anyone whose name is written in it, drawing the attention of master detective L.'
+      },
+      {
+        id: 'fmab',
+        title: 'Fullmetal Alchemist: Brotherhood',
+        rating: 9.1,
+        totalEpisodes: 64,
+        image: 'https://cdn.myanimelist.net/images/anime/1223/96541.jpg',
+        banner: './assets/hero_banner.png',
+        status: 'Finished Airing',
+        genres: ['Action', 'Adventure', 'Fantasy'],
+        studio: 'Bones',
+        year: 2009,
+        synopsis: 'Two brothers search for the Philosopher’s Stone to restore their bodies after a catastrophic alchemy transmutation goes wrong.'
+      }
+    ];
+
+    // Initial Watchlist matching EXACT stats from UI design:
+    // Watching = 12, Completed = 48, Episodes = 620
+    const DEFAULT_WATCHLIST = [
+      { animeId: 'demon-slayer', status: 'Watching', episodesWatched: 12, score: 9 }, // 12/26 = 46%
+      { animeId: 'jujutsu-kaisen', status: 'Watching', episodesWatched: 8, score: 9 }, // 8/24 = 33%
+      { animeId: 'one-piece', status: 'Watching', episodesWatched: 120, score: 10 },
+      { animeId: 'chainsaw-man', status: 'Watching', episodesWatched: 6, score: 8 },
+      { animeId: 'solo-leveling', status: 'Watching', episodesWatched: 6, score: 9 },
+      { animeId: 'bleach-tybw', status: 'Watching', episodesWatched: 14, score: 9 },
+      { animeId: 'frieren', status: 'Watching', episodesWatched: 16, score: 10 },
+      { animeId: 'spy-x-family', status: 'Watching', episodesWatched: 18, score: 9 },
+      { animeId: 'vinland-saga', title: 'Vinland Saga', totalEpisodes: 48, image: 'https://cdn.myanimelist.net/images/anime/1500/103005.jpg', status: 'Watching', episodesWatched: 20, score: 9 },
+      { animeId: 'mha', title: 'My Hero Academia', totalEpisodes: 138, image: 'https://cdn.myanimelist.net/images/anime/10/78745.jpg', status: 'Watching', episodesWatched: 25, score: 8 },
+      { animeId: 'haikyuu', title: 'Haikyuu!!', totalEpisodes: 85, image: 'https://cdn.myanimelist.net/images/anime/7/76014.jpg', status: 'Watching', episodesWatched: 35, score: 9 },
+      { animeId: 'mob-psycho', title: 'Mob Psycho 100', totalEpisodes: 37, image: 'https://cdn.myanimelist.net/images/anime/8/80356.jpg', status: 'Watching', episodesWatched: 20, score: 9 },
+      
+      // Completed List: exactly 48 items
+      { animeId: 'attack-on-titan', status: 'Completed', episodesWatched: 87, score: 10 },
+      { animeId: 'death-note', status: 'Completed', episodesWatched: 37, score: 9 },
+      { animeId: 'fmab', status: 'Completed', episodesWatched: 64, score: 10 },
+      { animeId: 'cyberpunk', title: 'Cyberpunk: Edgerunners', totalEpisodes: 10, image: 'https://cdn.myanimelist.net/images/anime/1816/123507.jpg', status: 'Completed', episodesWatched: 10, score: 9 },
+      // Remaining 44 items to total 48 completed and 620 total episodes watched
+      ...Array.from({ length: 44 }, (_, i) => ({
+        animeId: `comp_${i + 1}`,
+        title: [
+          'Your Name', 'Spirited Away', 'Princess Mononoke', 'Weathering With You', 'A Silent Voice',
+          'Akira', 'Ghost in the Shell', 'Perfect Blue', 'Suzume', '5 Centimeters Per Second',
+          'Garden of Words', 'Wolf Children', 'Paprika', 'The Girl Who Leapt Through Time', 'Redline',
+          'Summer Wars', 'Promare', 'Tokyo Godfathers', 'Millennium Actress', 'I Want to Eat Your Pancreas',
+          'Steins;Gate Movie', 'K-On! Movie', 'Madoka Magica: Rebellion', 'Grave of the Fireflies',
+          'Howl\'s Moving Castle', 'Castle in the Sky', 'Ponyo', 'Nausicaä', 'The Wind Rises',
+          'When Marnie Was There', 'Violet Evergarden: The Movie', 'Demon Slayer: Mugen Train',
+          'Jujutsu Kaisen 0', 'Heaven\'s Feel I', 'Heaven\'s Feel II', 'Heaven\'s Feel III',
+          'Kizumonogatari I', 'Kizumonogatari II', 'Kizumonogatari III', 'One Piece Film Red',
+          'Dragon Ball Super Broly', 'Stand by Me Doraemon', 'The Boy and the Heron', 'Belle'
+        ][i] || `Anime Film ${i + 1}`,
+        totalEpisodes: i < 34 ? 3 : 2,
+        episodesWatched: i < 34 ? 3 : 2,
+        status: 'Completed',
+        score: 8 + (i % 3)
+      }))
+    ];
+
+    function App() {
+      // 1. User & Auth State (FR1, FR11)
+      const [user, setUser] = useState(() => {
+        const saved = localStorage.getItem('anitrack_user');
+        return saved ? JSON.parse(saved) : {
+          username: 'Harish',
+          displayName: 'Harish',
+          avatar: './assets/avatar.png',
+          email: 'harish@anitrack.io',
+          isPremium: false
+        };
+      });
+
+      // 2. Watchlist State (FR5, FR6, FR7, FR8, FR9, FR10)
+      const [watchlist, setWatchlist] = useState(() => {
+        const saved = localStorage.getItem('anitrack_wl');
+        return saved ? JSON.parse(saved) : DEFAULT_WATCHLIST;
+      });
+
+      // 3. Navigation & UI State
+      const [activeTab, setActiveTab] = useState('home'); // 'home' | 'explore' | 'watchlist' | 'progress' | 'profile' | 'settings'
+      const [searchQuery, setSearchQuery] = useState('');
+      const [selectedAnime, setSelectedAnime] = useState(null);
+      const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+      const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+      const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+      const [isNotifOpen, setIsNotifOpen] = useState(false);
+      const [toast, setToast] = useState(null);
+      const [exploreGenre, setExploreGenre] = useState('All');
+      const [watchlistFilter, setWatchlistFilter] = useState('All');
+      const [sortBy, setSortBy] = useState('popularity');
+
+      // Persistence
+      useEffect(() => {
+        localStorage.setItem('anitrack_user', JSON.stringify(user));
+      }, [user]);
+
+      useEffect(() => {
+        localStorage.setItem('anitrack_wl', JSON.stringify(watchlist));
+      }, [watchlist]);
+
+      // Toast notification helper
+      const showToast = (message, type = 'info') => {
+        setToast({ message, type, id: Date.now() });
+        setTimeout(() => setToast(null), 3500);
+      };
+
+      // Real-time Dynamic Statistics (FR8)
+      const stats = useMemo(() => {
+        const watching = watchlist.filter(w => w.status === 'Watching');
+        const completed = watchlist.filter(w => w.status === 'Completed');
+        const totalEp = watchlist.reduce((sum, item) => sum + (Number(item.episodesWatched) || 0), 0);
+        return {
+          watchingCount: watching.length,
+          completedCount: completed.length,
+          totalEpisodes: totalEp
+        };
+      }, [watchlist]);
+
+      // Lookup Anime Metadata
+      const getAnime = (id, fallback = {}) => {
+        const found = MASTER_ANIME.find(a => a.id === id);
+        if (found) return found;
+        return {
+          id: id,
+          title: fallback.title || 'Anime Series',
+          rating: 8.5,
+          totalEpisodes: fallback.totalEpisodes || 24,
+          image: fallback.image || './assets/pop_one_piece.png',
+          banner: './assets/hero_banner.png',
+          status: 'Finished Airing',
+          genres: ['Action', 'Fantasy'],
+          studio: 'Animation Studio',
+          synopsis: 'An exciting story tracked in your AniTrack profile.'
+        };
+      };
+
+      // FR6 & FR10: Episode Tracking & Auto-completion
+      const handleEpisodeChange = (animeId, newCount) => {
+        const target = watchlist.find(w => w.animeId === animeId);
+        const anime = getAnime(animeId, target);
+        const max = anime.totalEpisodes || 1000;
+        const clamped = Math.max(0, Math.min(newCount, max));
+
+        let newStatus = target?.status || 'Watching';
+        let didComplete = false;
+
+        // FR10: Automatically mark Completed when watched episodes equal total episodes
+        if (clamped >= max && newStatus !== 'Completed') {
+          newStatus = 'Completed';
+          didComplete = true;
+        } else if (clamped < max && newStatus === 'Completed' && newCount < (target?.episodesWatched || 0)) {
+          newStatus = 'Watching';
+        }
+
+        setWatchlist(prev => {
+          const exists = prev.some(w => w.animeId === animeId);
+          if (exists) {
+            return prev.map(w => w.animeId === animeId ? {
+              ...w,
+              episodesWatched: clamped,
+              status: newStatus,
+              updatedAt: new Date().toISOString()
+            } : w);
+          } else {
+            return [{
+              animeId,
+              status: newStatus,
+              episodesWatched: clamped,
+              score: null,
+              updatedAt: new Date().toISOString()
+            }, ...prev];
+          }
+        });
+
+        if (didComplete) {
+          try {
+            confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+          } catch(e){}
+          showToast(`🏆 Completed "${anime.title}"! Auto-marked Completed!`, 'success');
+        } else {
+          showToast(`Updated "${anime.title}" to episode ${clamped}/${max}`);
+        }
+      };
+
+      // Add or change status (FR5)
+      const handleStatusChange = (animeId, newStatus) => {
+        const anime = getAnime(animeId);
+        const max = anime.totalEpisodes || 24;
+
+        setWatchlist(prev => {
+          const exists = prev.some(w => w.animeId === animeId);
+          if (exists) {
+            return prev.map(w => {
+              if (w.animeId === animeId) {
+                const ep = newStatus === 'Completed' ? max : (newStatus === 'Plan to Watch' ? 0 : w.episodesWatched);
+                return { ...w, status: newStatus, episodesWatched: ep };
+              }
+              return w;
+            });
+          } else {
+            const ep = newStatus === 'Completed' ? max : (newStatus === 'Watching' ? 1 : 0);
+            return [{
+              animeId,
+              status: newStatus,
+              episodesWatched: ep,
+              score: null
+            }, ...prev];
+          }
+        });
+
+        showToast(`"${anime.title}" set to ${newStatus}`, 'success');
+      };
+
+      // Remove from watchlist (FR9)
+      const handleRemove = (animeId) => {
+        const anime = getAnime(animeId);
+        setWatchlist(prev => prev.filter(w => w.animeId !== animeId));
+        showToast(`Removed "${anime.title}" from watchlist`);
+      };
+
+      // Reset to screenshot demo values
+      const handleResetDemo = () => {
+        setWatchlist(DEFAULT_WATCHLIST);
+        showToast('Reset to original UI screenshot values (12 Watching, 48 Completed, 620 Episodes)!', 'success');
+      };
+
+      // Filtered Continue Watching (FR7)
+      const continueWatchingList = useMemo(() => {
+        return watchlist.filter(w => w.status === 'Watching');
+      }, [watchlist]);
+
+      // Search results
+      const searchResults = useMemo(() => {
+        if (!searchQuery.trim()) return [];
+        const q = searchQuery.toLowerCase();
+        return MASTER_ANIME.filter(a => 
+          a.title.toLowerCase().includes(q) || 
+          a.genres.some(g => g.toLowerCase().includes(q))
+        );
+      }, [searchQuery]);
+
+      return (
+        <div className="flex min-h-screen bg-[#090810] text-gray-100 font-sans selection:bg-purple-600 selection:text-white">
+          
+          {/* TOAST NOTIFICATION */}
+          {toast && (
+            <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 text-sm font-medium transition-all transform duration-300 ${
+              toast.type === 'success' ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white border border-emerald-400/30' : 'bg-[#1a1738] text-purple-200 border border-purple-500/30'
+            }`}>
+              <span>{toast.message}</span>
+            </div>
+          )}
+
+          {/* ================= LEFT SIDEBAR ================= */}
+          <aside className="w-64 flex-shrink-0 bg-[#090810] border-r border-[#1c1833] flex flex-col justify-between min-h-screen sticky top-0 h-screen overflow-y-auto">
+            <div>
+              {/* Logo Area */}
+              <div className="px-6 py-6 flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('home')}>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-700 to-indigo-600 p-0.5 shadow-lg shadow-purple-600/30 flex items-center justify-center">
+                  <img src="./assets/logo.png" alt="AniTrack" className="w-full h-full object-contain rounded-lg" onError={(e)=>{e.target.style.display='none'}} />
+                  <div className="text-white font-black text-xl hidden">A</div>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold tracking-tight text-white flex items-center">
+                    Ani<span className="text-purple-400">Track</span>
+                  </h1>
+                  <p className="text-[10px] uppercase tracking-wider text-purple-300/70 font-medium">
+                    Track • Discover • Enjoy
+                  </p>
+                </div>
+              </div>
+
+              {/* Navigation Menu */}
+              <nav className="px-4 space-y-1.5 mt-2">
+                <button
+                  onClick={() => setActiveTab('home')}
+                  className={`w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    activeTab === 'home'
+                      ? 'bg-gradient-to-r from-purple-700 to-indigo-600 text-white shadow-lg shadow-purple-700/30'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Icons.Home className="w-5 h-5" />
+                  <span>Home</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('explore')}
+                  className={`w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    activeTab === 'explore'
+                      ? 'bg-gradient-to-r from-purple-700 to-indigo-600 text-white shadow-lg shadow-purple-700/30'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Icons.Compass className="w-5 h-5" />
+                  <span>Explore Anime</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('watchlist')}
+                  className={`w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    activeTab === 'watchlist'
+                      ? 'bg-gradient-to-r from-purple-700 to-indigo-600 text-white shadow-lg shadow-purple-700/30'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Icons.Bookmark className="w-5 h-5" />
+                  <span>My Watchlist</span>
+                  <span className="ml-auto text-xs bg-purple-900/60 text-purple-300 px-2 py-0.5 rounded-full">
+                    {watchlist.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('progress')}
+                  className={`w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    activeTab === 'progress'
+                      ? 'bg-gradient-to-r from-purple-700 to-indigo-600 text-white shadow-lg shadow-purple-700/30'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Icons.BarChart className="w-5 h-5" />
+                  <span>My Progress</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  className={`w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    activeTab === 'profile'
+                      ? 'bg-gradient-to-r from-purple-700 to-indigo-600 text-white shadow-lg shadow-purple-700/30'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Icons.User className="w-5 h-5" />
+                  <span>Profile</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('settings')}
+                  className={`w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    activeTab === 'settings'
+                      ? 'bg-gradient-to-r from-purple-700 to-indigo-600 text-white shadow-lg shadow-purple-700/30'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Icons.Settings className="w-5 h-5" />
+                  <span>Settings</span>
+                </button>
+              </nav>
+
+              {/* Sidebar Upgrade Banner */}
+              <div className="px-4 mt-6">
+                <div className="rounded-2xl p-4 bg-[#141126] border border-purple-900/30 text-center relative overflow-hidden group">
+                  <div className="w-10 h-10 mx-auto rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-2">
+                    <Icons.Crown className="w-5 h-5" />
+                  </div>
+                  <h4 className="text-sm font-bold text-white">Go Premium</h4>
+                  <p className="text-[11px] text-gray-400 mt-1 leading-snug">
+                    Unlock more features and track like a pro!
+                  </p>
+                  <button
+                    onClick={() => setIsPremiumModalOpen(true)}
+                    className="mt-3 w-full py-2 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-purple-900/40"
+                  >
+                    Upgrade Now
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar Bottom Torii Gate Artwork */}
+            <div className="mt-4 px-2 pb-2">
+              <div className="rounded-xl overflow-hidden opacity-85 hover:opacity-100 transition-opacity">
+                <img src="./assets/sidebar_torii.png" alt="Torii Gate" className="w-full h-auto object-cover" />
+              </div>
+            </div>
+          </aside>
+
+          {/* ================= MAIN CONTENT AREA ================= */}
+          <main className="flex-1 flex flex-col min-w-0 pb-16">
+            
+            {/* Top Header Bar */}
+            <header className="px-8 py-5 flex items-center justify-between sticky top-0 z-30 bg-[#090810]/90 backdrop-blur-md border-b border-[#18142b]">
+              
+              {/* Search Bar (FR3) */}
+              <div className="relative w-full max-w-md">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-purple-400/60">
+                  <Icons.Search className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => { if(activeTab !== 'home' && activeTab !== 'explore') setActiveTab('explore'); }}
+                  placeholder="Search anime... (e.g. One Piece)"
+                  className="w-full pl-11 pr-4 py-2.5 bg-[#121024] border border-[#231e3d] rounded-full text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-inner"
+                />
+                
+                {/* Instant Search Suggestions Dropdown */}
+                {searchQuery.trim().length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-2 bg-[#141126] border border-purple-900/40 rounded-2xl shadow-2xl overflow-hidden z-50">
+                    <div className="p-2 divide-y divide-purple-950">
+                      {searchResults.length === 0 ? (
+                        <div className="p-3 text-center text-xs text-gray-400">
+                          No anime found for "{searchQuery}"
+                        </div>
+                      ) : (
+                        searchResults.slice(0, 5).map(anime => (
+                          <div
+                            key={anime.id}
+                            onClick={() => { setSelectedAnime(anime); setSearchQuery(''); }}
+                            className="p-2.5 flex items-center space-x-3 hover:bg-purple-900/20 cursor-pointer rounded-xl transition"
+                          >
+                            <img src={anime.image} alt={anime.title} className="w-10 h-10 object-cover rounded-lg" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-white truncate">{anime.title}</p>
+                              <p className="text-xs text-purple-300/70">{anime.genres.join(', ')} • {anime.totalEpisodes} eps</p>
+                            </div>
+                            <span className="text-xs font-bold text-amber-400">★ {anime.rating}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Header Right Actions */}
+              <div className="flex items-center space-x-5 ml-6">
+                
+                {/* Notifications Button */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsNotifOpen(!isNotifOpen)}
+                    className="p-2.5 rounded-full text-gray-300 hover:text-white hover:bg-purple-900/20 relative transition"
+                    title="Notifications"
+                  >
+                    <Icons.Bell className="w-5 h-5" />
+                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-[#090810]"></span>
+                  </button>
+
+                  {/* Notifications Popover */}
+                  {isNotifOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-[#141126] border border-purple-900/40 rounded-2xl shadow-2xl p-4 z-50">
+                      <div className="flex items-center justify-between pb-2 border-b border-purple-900/30">
+                        <h4 className="font-bold text-sm text-white">Notifications</h4>
+                        <span className="text-[11px] text-purple-400 cursor-pointer hover:underline">Mark all read</span>
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        <div className="text-xs bg-purple-950/40 p-2.5 rounded-xl border border-purple-800/20">
+                          <p className="font-semibold text-purple-200">Demon Slayer Episode 12</p>
+                          <p className="text-gray-400 text-[11px] mt-0.5">Watched 12 of 26 episodes (46%).</p>
+                        </div>
+                        <div className="text-xs bg-purple-950/40 p-2.5 rounded-xl border border-purple-800/20">
+                          <p className="font-semibold text-purple-200">One Piece Chapter & Ep 1081</p>
+                          <p className="text-gray-400 text-[11px] mt-0.5">Now ready to add to your tracker.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* User Avatar & Menu (FR1, FR11) */}
+                <div className="flex items-center space-x-3">
+                  {user ? (
+                    <div
+                      onClick={() => setActiveTab('profile')}
+                      className="flex items-center space-x-2.5 cursor-pointer group"
+                    >
+                      <div className="relative">
+                        <img
+                          src={user.avatar || "./assets/avatar.png"}
+                          alt={user.displayName}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-purple-600/60 group-hover:border-purple-400 transition"
+                        />
+                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-[#090810]"></span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-200 hidden md:inline group-hover:text-purple-300">
+                        {user.displayName}
+                      </span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
+                      className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition"
+                    >
+                      Sign In
+                    </button>
+                  )}
+                </div>
+              </div>
+            </header>
+
+            {/* Content Body Based on Active Tab */}
+            <div className="px-8 py-6 space-y-8">
+              
+              {/* TAB 1: HOME PAGE (EXACT UI REPLICA) */}
+              {activeTab === 'home' && (
+                <>
+                  {/* Hero Banner */}
+                  <div className="relative rounded-3xl overflow-hidden border border-purple-900/30 bg-[#120f29] shadow-2xl">
+                    {/* Background Artwork */}
+                    <img
+                      src="./assets/hero_banner.png"
+                      alt="Hero Banner"
+                      className="absolute inset-0 w-full h-full object-cover object-right"
+                    />
+                    
+                    {/* Dark Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0d0b1d] via-[#0d0b1d]/85 to-transparent"></div>
+
+                    {/* Banner Content */}
+                    <div className="relative z-10 p-8 md:p-12 max-w-xl">
+                      
+                      {/* Pill Badge */}
+                      <div className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-purple-950/70 border border-purple-500/40 text-purple-300 mb-4">
+                        YOUR ANIME UNIVERSE
+                      </div>
+
+                      {/* Main Heading */}
+                      <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">
+                        Track every <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-300">
+                          episode.
+                        </span>
+                      </h2>
+
+                      {/* Subtitle */}
+                      <p className="mt-3 text-purple-200/80 text-sm md:text-base font-normal leading-relaxed">
+                        Discover anime. Build your watchlist. Keep your story going.
+                      </p>
+
+                      {/* Action Buttons */}
+                      <div className="mt-6 flex items-center space-x-4">
+                        <button
+                          onClick={() => setActiveTab('explore')}
+                          className="px-6 py-3 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-bold flex items-center space-x-2 shadow-lg shadow-purple-700/40 transition-transform active:scale-95"
+                        >
+                          <Icons.Play className="w-4 h-4 fill-current" />
+                          <span>Explore Anime</span>
+                        </button>
+
+                        <button
+                          onClick={() => setActiveTab('watchlist')}
+                          className="px-6 py-3 rounded-full bg-[#16122d]/80 hover:bg-[#201a40] border border-purple-500/40 text-white text-sm font-semibold flex items-center space-x-2 backdrop-blur-sm transition-transform active:scale-95"
+                        >
+                          <Icons.Bookmark className="w-4 h-4" />
+                          <span>My Watchlist</span>
+                        </button>
+                      </div>
+
+                      {/* Carousel Dots */}
+                      <div className="mt-8 flex items-center space-x-2">
+                        <span className="w-6 h-2 rounded-full bg-white"></span>
+                        <span className="w-2 h-2 rounded-full bg-purple-500/40"></span>
+                        <span className="w-2 h-2 rounded-full bg-purple-500/40"></span>
+                        <span className="w-2 h-2 rounded-full bg-purple-500/40"></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Stats Bar (3 Cards - FR8) */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    {/* Stat Card 1: Watching */}
+                    <div
+                      onClick={() => { setWatchlistFilter('Watching'); setActiveTab('watchlist'); }}
+                      className="rounded-2xl p-5 bg-[#131124] border border-[#231e3d] flex items-center space-x-4 hover:border-purple-600/40 transition cursor-pointer relative overflow-hidden group shadow-lg"
+                    >
+                      <div className="w-14 h-14 rounded-2xl bg-purple-950/80 border border-purple-500/30 flex items-center justify-center text-purple-400 group-hover:scale-105 transition">
+                        <Icons.Play className="w-6 h-6 fill-current" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Watching</p>
+                        <h3 className="text-3xl font-black text-white mt-0.5">{stats.watchingCount}</h3>
+                      </div>
+                    </div>
+
+                    {/* Stat Card 2: Completed */}
+                    <div
+                      onClick={() => { setWatchlistFilter('Completed'); setActiveTab('watchlist'); }}
+                      className="rounded-2xl p-5 bg-[#131124] border border-[#231e3d] flex items-center space-x-4 hover:border-teal-500/40 transition cursor-pointer relative overflow-hidden group shadow-lg"
+                    >
+                      <div className="w-14 h-14 rounded-2xl bg-teal-950/80 border border-teal-500/30 flex items-center justify-center text-teal-400 group-hover:scale-105 transition">
+                        <Icons.Check className="w-6 h-6 stroke-[3]" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Completed</p>
+                        <h3 className="text-3xl font-black text-white mt-0.5">{stats.completedCount}</h3>
+                      </div>
+                    </div>
+
+                    {/* Stat Card 3: Episodes */}
+                    <div
+                      onClick={() => setActiveTab('progress')}
+                      className="rounded-2xl p-5 bg-[#131124] border border-[#231e3d] flex items-center space-x-4 hover:border-amber-500/40 transition cursor-pointer relative overflow-hidden group shadow-lg"
+                    >
+                      <div className="w-14 h-14 rounded-2xl bg-amber-950/80 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-105 transition">
+                        <Icons.Star className="w-6 h-6 fill-current" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Episodes</p>
+                        <h3 className="text-3xl font-black text-white mt-0.5">{stats.totalEpisodes}</h3>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 1: Continue Watching (FR7) */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2.5">
+                        <span className="w-1.5 h-5 rounded-full bg-purple-500"></span>
+                        <h3 className="text-lg font-bold text-white tracking-wide">Continue Watching</h3>
+                      </div>
+                      <button
+                        onClick={() => { setWatchlistFilter('Watching'); setActiveTab('watchlist'); }}
+                        className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center space-x-1"
+                      >
+                        <span>View all</span>
+                        <Icons.ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Continue Watching Cards Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      
+                      {/* Continue Watching Card 1: Demon Slayer */}
+                      {(() => {
+                        const dsEntry = watchlist.find(w => w.animeId === 'demon-slayer') || { episodesWatched: 12 };
+                        const dsInfo = getAnime('demon-slayer');
+                        const percent = Math.round((dsEntry.episodesWatched / dsInfo.totalEpisodes) * 100);
+                        return (
+                          <div className="rounded-2xl p-4 bg-[#131124] border border-[#231e3d] flex items-center space-x-4 hover:border-purple-600/40 transition shadow-lg relative group">
+                            <img
+                              src="./assets/cw_demon_slayer.png"
+                              alt="Demon Slayer"
+                              className="w-20 h-20 rounded-xl object-cover flex-shrink-0 cursor-pointer"
+                              onClick={() => setSelectedAnime(dsInfo)}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h4
+                                onClick={() => setSelectedAnime(dsInfo)}
+                                className="text-sm font-bold text-white truncate cursor-pointer hover:text-purple-300 transition"
+                              >
+                                Demon Slayer
+                              </h4>
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                Episode {dsEntry.episodesWatched} / {dsInfo.totalEpisodes}
+                              </p>
+                              
+                              {/* Progress bar */}
+                              <div className="mt-3 flex items-center space-x-3">
+                                <div className="flex-1 h-2 bg-[#201c38] rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-purple-600 to-indigo-500 rounded-full transition-all duration-300"
+                                    style={{ width: `${percent}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-[11px] font-bold text-purple-300 w-8 text-right">
+                                  {percent}%
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Play / Increment Button */}
+                            <button
+                              onClick={() => handleEpisodeChange('demon-slayer', dsEntry.episodesWatched + 1)}
+                              title="Watch next episode (+1)"
+                              className="w-10 h-10 rounded-full bg-[#1e1a38] hover:bg-purple-600 border border-purple-500/30 hover:border-transparent flex items-center justify-center text-white transition-all shadow-md active:scale-90"
+                            >
+                              <Icons.Play className="w-4 h-4 fill-current ml-0.5" />
+                            </button>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Continue Watching Card 2: Jujutsu Kaisen */}
+                      {(() => {
+                        const jjkEntry = watchlist.find(w => w.animeId === 'jujutsu-kaisen') || { episodesWatched: 8 };
+                        const jjkInfo = getAnime('jujutsu-kaisen');
+                        const percent = Math.round((jjkEntry.episodesWatched / jjkInfo.totalEpisodes) * 100);
+                        return (
+                          <div className="rounded-2xl p-4 bg-[#131124] border border-[#231e3d] flex items-center space-x-4 hover:border-purple-600/40 transition shadow-lg relative group">
+                            <img
+                              src="./assets/cw_jujutsu_kaisen.png"
+                              alt="Jujutsu Kaisen"
+                              className="w-20 h-20 rounded-xl object-cover flex-shrink-0 cursor-pointer"
+                              onClick={() => setSelectedAnime(jjkInfo)}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h4
+                                onClick={() => setSelectedAnime(jjkInfo)}
+                                className="text-sm font-bold text-white truncate cursor-pointer hover:text-purple-300 transition"
+                              >
+                                Jujutsu Kaisen
+                              </h4>
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                Episode {jjkEntry.episodesWatched} / {jjkInfo.totalEpisodes}
+                              </p>
+                              
+                              {/* Progress bar */}
+                              <div className="mt-3 flex items-center space-x-3">
+                                <div className="flex-1 h-2 bg-[#201c38] rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-purple-600 to-indigo-500 rounded-full transition-all duration-300"
+                                    style={{ width: `${percent}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-[11px] font-bold text-purple-300 w-8 text-right">
+                                  {percent}%
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Play / Increment Button */}
+                            <button
+                              onClick={() => handleEpisodeChange('jujutsu-kaisen', jjkEntry.episodesWatched + 1)}
+                              title="Watch next episode (+1)"
+                              className="w-10 h-10 rounded-full bg-[#1e1a38] hover:bg-purple-600 border border-purple-500/30 hover:border-transparent flex items-center justify-center text-white transition-all shadow-md active:scale-90"
+                            >
+                              <Icons.Play className="w-4 h-4 fill-current ml-0.5" />
+                            </button>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Card 3: Anime Forever Samurai Artwork Panel */}
+                      <div className="rounded-2xl overflow-hidden border border-purple-900/30 bg-[#16112c] relative flex items-center justify-center min-h-[105px]">
+                        <img
+                          src="./assets/anime_forever.png"
+                          alt="Anime Forever"
+                          className="w-full h-full object-cover max-h-28"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 2: Popular Anime (FR3, FR4) */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2.5">
+                        <span className="w-1.5 h-5 rounded-full bg-purple-500"></span>
+                        <h3 className="text-lg font-bold text-white tracking-wide">Popular Anime</h3>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab('explore')}
+                        className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center space-x-1"
+                      >
+                        <span>View all</span>
+                        <Icons.ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* 6 Popular Cards Row (Exact replica of screenshot) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                      {MASTER_ANIME.slice(0, 6).map((anime) => {
+                        const inWatchlist = watchlist.find(w => w.animeId === anime.id);
+                        return (
+                          <div
+                            key={anime.id}
+                            className="group cursor-pointer"
+                            onClick={() => setSelectedAnime(anime)}
+                          >
+                            {/* Card Poster with Badge */}
+                            <div className="relative rounded-2xl overflow-hidden border border-[#231e3d] group-hover:border-purple-500/50 transition-all duration-300 bg-[#131124] aspect-square">
+                              <img
+                                src={anime.image}
+                                alt={anime.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              
+                              {/* Rating Badge */}
+                              <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-sm border border-black/40 text-[11px] font-bold text-white flex items-center space-x-1 shadow">
+                                <span className="text-amber-400">★</span>
+                                <span>{anime.rating.toFixed(1)}</span>
+                              </div>
+
+                              {/* Watchlist status indicator if present */}
+                              {inWatchlist && (
+                                <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-purple-900/90 border border-purple-400/40 text-[10px] font-bold text-purple-200">
+                                  {inWatchlist.status}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Title */}
+                            <h4 className="mt-2.5 text-xs font-semibold text-gray-200 group-hover:text-purple-300 transition truncate">
+                              {anime.title}
+                            </h4>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* TAB 2: EXPLORE ANIME (FR3, FR4, FR5) */}
+              {activeTab === 'explore' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-black text-white">Explore Anime</h2>
+                    <p className="text-sm text-gray-400">Search and discover titles across all genres and seasons.</p>
+                  </div>
+
+                  {/* Filter and Sort Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-[#131124] border border-[#231e3d]">
+                    {/* Genre Pills */}
+                    <div className="flex flex-wrap gap-2">
+                      {['All', 'Action', 'Adventure', 'Dark Fantasy', 'Comedy', 'Supernatural', 'Drama', 'Mystery'].map(genre => (
+                        <button
+                          key={genre}
+                          onClick={() => setExploreGenre(genre)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                            exploreGenre === genre
+                              ? 'bg-purple-600 text-white'
+                              : 'bg-[#1e1a38] text-gray-300 hover:bg-purple-900/30'
+                          }`}
+                        >
+                          {genre}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Sort Options */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-400">Sort by:</span>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="bg-[#1e1a38] border border-[#2d2754] text-xs font-semibold text-gray-200 rounded-xl px-3 py-1.5 focus:outline-none"
+                      >
+                        <option value="popularity">Popularity</option>
+                        <option value="rating">Rating (Highest)</option>
+                        <option value="episodes">Episode Count</option>
+                        <option value="title">Title (A-Z)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Anime Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
+                    {MASTER_ANIME
+                      .filter(a => exploreGenre === 'All' || a.genres.includes(exploreGenre))
+                      .sort((a, b) => {
+                        if (sortBy === 'rating') return b.rating - a.rating;
+                        if (sortBy === 'episodes') return b.totalEpisodes - a.totalEpisodes;
+                        if (sortBy === 'title') return a.title.localeCompare(b.title);
+                        return 0;
+                      })
+                      .map(anime => {
+                        const inWatchlist = watchlist.find(w => w.animeId === anime.id);
+                        return (
+                          <div
+                            key={anime.id}
+                            className="bg-[#131124] border border-[#231e3d] rounded-2xl p-3 flex flex-col justify-between hover:border-purple-500/50 transition group"
+                          >
+                            <div className="relative aspect-square rounded-xl overflow-hidden cursor-pointer" onClick={() => setSelectedAnime(anime)}>
+                              <img src={anime.image} alt={anime.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                              <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-bold text-amber-400">
+                                ★ {anime.rating.toFixed(1)}
+                              </div>
+                            </div>
+
+                            <div className="mt-3 flex-1">
+                              <h4 onClick={() => setSelectedAnime(anime)} className="text-xs font-bold text-white truncate cursor-pointer hover:text-purple-300">
+                                {anime.title}
+                              </h4>
+                              <p className="text-[11px] text-gray-400 mt-0.5">
+                                {anime.totalEpisodes} Episodes
+                              </p>
+                            </div>
+
+                            {/* Watchlist Quick Action */}
+                            <div className="mt-3 pt-2 border-t border-[#1f1a3b]">
+                              {inWatchlist ? (
+                                <button
+                                  onClick={() => setSelectedAnime(anime)}
+                                  className="w-full py-1.5 rounded-lg bg-purple-900/40 text-purple-300 text-[11px] font-bold hover:bg-purple-900/70 transition"
+                                >
+                                  {inWatchlist.status} ({inWatchlist.episodesWatched}/{anime.totalEpisodes})
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleStatusChange(anime.id, 'Watching')}
+                                  className="w-full py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold transition flex items-center justify-center space-x-1"
+                                >
+                                  <Icons.Plus className="w-3.5 h-3.5" />
+                                  <span>Add to Watch</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: MY WATCHLIST (FR5, FR6, FR7, FR9, FR10) */}
+              {activeTab === 'watchlist' && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-black text-white">My Watchlist</h2>
+                      <p className="text-sm text-gray-400">Manage all your saved shows and update episode progress.</p>
+                    </div>
+
+                    {/* Filter Tabs */}
+                    <div className="flex flex-wrap gap-2">
+                      {['All', 'Watching', 'Completed', 'Plan to Watch', 'Dropped'].map(status => (
+                        <button
+                          key={status}
+                          onClick={() => setWatchlistFilter(status)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                            watchlistFilter === status
+                              ? 'bg-purple-600 text-white'
+                              : 'bg-[#131124] text-gray-400 border border-[#231e3d] hover:text-white'
+                          }`}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Watchlist Items */}
+                  <div className="space-y-3">
+                    {watchlist
+                      .filter(item => watchlistFilter === 'All' || item.status === watchlistFilter)
+                      .map(item => {
+                        const anime = getAnime(item.animeId, item);
+                        const percent = Math.min(100, Math.round(((item.episodesWatched || 0) / (anime.totalEpisodes || 1)) * 100));
+                        return (
+                          <div
+                            key={item.animeId}
+                            className="p-4 rounded-2xl bg-[#131124] border border-[#231e3d] flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-purple-600/30 transition shadow"
+                          >
+                            {/* Anime Info */}
+                            <div className="flex items-center space-x-4 min-w-0 flex-1">
+                              <img
+                                src={anime.image}
+                                alt={anime.title}
+                                className="w-16 h-16 rounded-xl object-cover flex-shrink-0 cursor-pointer"
+                                onClick={() => setSelectedAnime(anime)}
+                              />
+                              <div className="min-w-0">
+                                <h4
+                                  onClick={() => setSelectedAnime(anime)}
+                                  className="text-sm font-bold text-white truncate cursor-pointer hover:text-purple-300"
+                                >
+                                  {anime.title}
+                                </h4>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    item.status === 'Completed' ? 'bg-teal-900/60 text-teal-300 border border-teal-500/30' :
+                                    item.status === 'Watching' ? 'bg-purple-900/60 text-purple-300 border border-purple-500/30' :
+                                    'bg-gray-800 text-gray-300'
+                                  }`}>
+                                    {item.status}
+                                  </span>
+                                  <span className="text-xs text-gray-400">★ {anime.rating}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Progress Bar & Stepper Controls (FR6, FR10) */}
+                            <div className="flex items-center space-x-6">
+                              <div className="w-48">
+                                <div className="flex justify-between text-xs text-gray-400 mb-1 font-medium">
+                                  <span>Episode {item.episodesWatched} / {anime.totalEpisodes}</span>
+                                  <span className="font-bold text-purple-400">{percent}%</span>
+                                </div>
+                                <div className="h-2 bg-[#201c38] rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-purple-600 to-indigo-500 rounded-full"
+                                    style={{ width: `${percent}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+
+                              {/* Stepper Buttons */}
+                              <div className="flex items-center space-x-1.5">
+                                <button
+                                  onClick={() => handleEpisodeChange(item.animeId, (item.episodesWatched || 0) - 1)}
+                                  className="w-8 h-8 rounded-lg bg-[#1f1a3b] hover:bg-purple-700 text-gray-200 flex items-center justify-center transition"
+                                  title="Decrease episode"
+                                >
+                                  <Icons.Minus className="w-3.5 h-3.5" />
+                                </button>
+                                <span className="w-10 text-center font-bold text-xs text-white">
+                                  {item.episodesWatched}
+                                </span>
+                                <button
+                                  onClick={() => handleEpisodeChange(item.animeId, (item.episodesWatched || 0) + 1)}
+                                  className="w-8 h-8 rounded-lg bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center transition"
+                                  title="Increase episode"
+                                >
+                                  <Icons.Plus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              {/* Status Dropdown */}
+                              <select
+                                value={item.status}
+                                onChange={(e) => handleStatusChange(item.animeId, e.target.value)}
+                                className="bg-[#1f1a3b] border border-[#2f2757] text-xs font-semibold text-gray-200 rounded-xl px-2.5 py-1.5 focus:outline-none"
+                              >
+                                <option value="Watching">Watching</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Plan to Watch">Plan to Watch</option>
+                                <option value="Dropped">Dropped</option>
+                              </select>
+
+                              {/* Delete button (FR9) */}
+                              <button
+                                onClick={() => handleRemove(item.animeId)}
+                                className="p-2 text-gray-500 hover:text-rose-400 transition"
+                                title="Remove from watchlist"
+                              >
+                                <Icons.Trash className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: MY PROGRESS / ANALYTICS (FR8) */}
+              {activeTab === 'progress' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-black text-white">My Progress & Analytics</h2>
+                    <p className="text-sm text-gray-400">Detailed breakdown of your anime watching history and milestones.</p>
+                  </div>
+
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <div className="p-5 rounded-2xl bg-[#131124] border border-[#231e3d]">
+                      <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Total Episodes</p>
+                      <h3 className="text-3xl font-black text-purple-400 mt-1">{stats.totalEpisodes}</h3>
+                      <p className="text-[11px] text-gray-500 mt-1">~{Math.round((stats.totalEpisodes * 23) / 60)} hours total</p>
+                    </div>
+
+                    <div className="p-5 rounded-2xl bg-[#131124] border border-[#231e3d]">
+                      <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Currently Watching</p>
+                      <h3 className="text-3xl font-black text-indigo-400 mt-1">{stats.watchingCount}</h3>
+                      <p className="text-[11px] text-gray-500 mt-1">Active series</p>
+                    </div>
+
+                    <div className="p-5 rounded-2xl bg-[#131124] border border-[#231e3d]">
+                      <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Completed Series</p>
+                      <h3 className="text-3xl font-black text-teal-400 mt-1">{stats.completedCount}</h3>
+                      <p className="text-[11px] text-gray-500 mt-1">100% finished</p>
+                    </div>
+
+                    <div className="p-5 rounded-2xl bg-[#131124] border border-[#231e3d]">
+                      <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Completion Rate</p>
+                      <h3 className="text-3xl font-black text-amber-400 mt-1">
+                        {Math.round((stats.completedCount / (watchlist.length || 1)) * 100)}%
+                      </h3>
+                      <p className="text-[11px] text-gray-500 mt-1">Of saved watchlist</p>
+                    </div>
+                  </div>
+
+                  {/* Milestone Badges */}
+                  <div className="p-6 rounded-2xl bg-[#131124] border border-[#231e3d] space-y-4">
+                    <h3 className="text-base font-bold text-white">Milestone Achievements</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="p-4 rounded-xl bg-purple-950/40 border border-purple-800/30 flex items-center space-x-3">
+                        <span className="text-2xl">🌱</span>
+                        <div>
+                          <h5 className="text-xs font-bold text-white">Otaku Initiate</h5>
+                          <p className="text-[10px] text-purple-300/70">Started your anime tracker journey</p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-purple-950/40 border border-purple-800/30 flex items-center space-x-3">
+                        <span className="text-2xl">⚡</span>
+                        <div>
+                          <h5 className="text-xs font-bold text-white">Century Club</h5>
+                          <p className="text-[10px] text-purple-300/70">Watched over 100 episodes</p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-purple-950/40 border border-purple-800/30 flex items-center space-x-3">
+                        <span className="text-2xl">🔥</span>
+                        <div>
+                          <h5 className="text-xs font-bold text-white">Binge Legend</h5>
+                          <p className="text-[10px] text-purple-300/70">Passed 500 total episodes</p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-purple-950/40 border border-purple-800/30 flex items-center space-x-3">
+                        <span className="text-2xl">👑</span>
+                        <div>
+                          <h5 className="text-xs font-bold text-white">Master Finisher</h5>
+                          <p className="text-[10px] text-purple-300/70">Completed 40+ full anime series</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: PROFILE VIEW */}
+              {activeTab === 'profile' && (
+                <div className="space-y-6 max-w-2xl">
+                  <div>
+                    <h2 className="text-2xl font-black text-white">User Profile</h2>
+                    <p className="text-sm text-gray-400">View and update your personal information.</p>
+                  </div>
+
+                  <div className="p-6 rounded-2xl bg-[#131124] border border-[#231e3d] flex items-center space-x-5">
+                    <img src={user.avatar || "./assets/avatar.png"} alt={user.displayName} className="w-20 h-20 rounded-full border-2 border-purple-500 object-cover" />
+                    <div>
+                      <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+                        <span>{user.displayName}</span>
+                        {user.isPremium && <span className="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded-full font-bold">PRO</span>}
+                      </h3>
+                      <p className="text-xs text-gray-400">{user.email}</p>
+                      <p className="text-xs text-purple-400 mt-2 font-medium">Tracking since November 2024</p>
+                    </div>
+                  </div>
+
+                  <div className="p-6 rounded-2xl bg-[#131124] border border-[#231e3d] space-y-4">
+                    <h4 className="text-sm font-bold text-white">Watchlist Backup & Sync</h4>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                      Export your complete watchlist as JSON to backup your data or import it onto any other device.
+                    </p>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => {
+                          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(watchlist, null, 2));
+                          const dlAnchor = document.createElement('a');
+                          dlAnchor.setAttribute("href", dataStr);
+                          dlAnchor.setAttribute("download", "anitrack_watchlist.json");
+                          dlAnchor.click();
+                          showToast('Watchlist exported successfully!', 'success');
+                        }}
+                        className="px-4 py-2 bg-[#1f1a3b] hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition"
+                      >
+                        Export Watchlist (JSON)
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setUser(null);
+                          showToast('Logged out of AniTrack');
+                        }}
+                        className="px-4 py-2 bg-rose-950/40 border border-rose-800/40 text-rose-300 hover:bg-rose-900/60 text-xs font-bold rounded-xl transition"
+                      >
+                        Log Out
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 6: SETTINGS VIEW */}
+              {activeTab === 'settings' && (
+                <div className="space-y-6 max-w-2xl">
+                  <div>
+                    <h2 className="text-2xl font-black text-white">Settings</h2>
+                    <p className="text-sm text-gray-400">Configure application preferences and behavior.</p>
+                  </div>
+
+                  <div className="p-6 rounded-2xl bg-[#131124] border border-[#231e3d] space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Auto-Complete when max episode reached (FR10)</h4>
+                        <p className="text-xs text-gray-400 mt-0.5">Automatically mark anime as 'Completed' upon reaching final episode.</p>
+                      </div>
+                      <span className="text-xs bg-emerald-950 border border-emerald-500/40 text-emerald-400 px-2.5 py-1 rounded-full font-bold">Enabled</span>
+                    </div>
+
+                    <div className="border-t border-[#1f1a3b] pt-4 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Active Theme</h4>
+                        <p className="text-xs text-gray-400 mt-0.5">Dark Purple Midnight (Design Match)</p>
+                      </div>
+                      <span className="w-5 h-5 rounded-full bg-purple-600 ring-4 ring-purple-900/40"></span>
+                    </div>
+
+                    <div className="border-t border-[#1f1a3b] pt-4 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Restore Design Demo Data</h4>
+                        <p className="text-xs text-gray-400 mt-0.5">Reset stats to 12 Watching, 48 Completed, 620 Episodes from original screenshot.</p>
+                      </div>
+                      <button
+                        onClick={handleResetDemo}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition shadow"
+                      >
+                        Reset Demo Data
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </main>
+
+          {/* ================= ANIME DETAIL MODAL (FR4) ================= */}
+          {selectedAnime && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-[#141126] border border-purple-800/40 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl relative">
+                
+                {/* Banner & Close */}
+                <div className="relative h-48 bg-purple-950">
+                  <img src={selectedAnime.banner || selectedAnime.image} alt={selectedAnime.title} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#141126] via-[#141126]/60 to-transparent"></div>
+                  
+                  <button
+                    onClick={() => setSelectedAnime(null)}
+                    className="absolute top-4 right-4 p-2 rounded-full bg-black/60 text-white hover:bg-black/90 transition"
+                  >
+                    <Icons.Close className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-6 -mt-12 relative z-10 space-y-4">
+                  <div className="flex items-end space-x-4">
+                    <img
+                      src={selectedAnime.image}
+                      alt={selectedAnime.title}
+                      className="w-24 h-24 rounded-2xl object-cover border-2 border-purple-500 shadow-xl flex-shrink-0"
+                    />
+                    <div>
+                      <h3 className="text-xl font-black text-white">{selectedAnime.title}</h3>
+                      <p className="text-xs text-purple-300 font-semibold mt-0.5">
+                        {selectedAnime.studio} • {selectedAnime.year || 2020} • ★ {selectedAnime.rating}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Genre Badges */}
+                  <div className="flex flex-wrap gap-1.5 pt-2">
+                    {selectedAnime.genres.map(g => (
+                      <span key={g} className="px-2.5 py-0.5 rounded-full bg-purple-950/80 border border-purple-500/30 text-[11px] font-semibold text-purple-300">
+                        {g}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Synopsis */}
+                  <p className="text-xs text-gray-300 leading-relaxed max-h-28 overflow-y-auto">
+                    {selectedAnime.synopsis}
+                  </p>
+
+                  {/* Watchlist Controls (FR5, FR6, FR10) */}
+                  <div className="pt-4 border-t border-purple-950/60 flex flex-wrap items-center justify-between gap-4">
+                    {(() => {
+                      const entry = watchlist.find(w => w.animeId === selectedAnime.id);
+                      return (
+                        <>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-400 font-medium">Status:</span>
+                            <select
+                              value={entry?.status || 'None'}
+                              onChange={(e) => {
+                                if (e.target.value === 'None') {
+                                  handleRemove(selectedAnime.id);
+                                } else {
+                                  handleStatusChange(selectedAnime.id, e.target.value);
+                                }
+                              }}
+                              className="bg-[#1f1a3b] border border-[#2f2757] text-xs font-semibold text-white rounded-xl px-3 py-1.5 focus:outline-none"
+                            >
+                              <option value="None">Not in list</option>
+                              <option value="Watching">Watching</option>
+                              <option value="Completed">Completed</option>
+                              <option value="Plan to Watch">Plan to Watch</option>
+                              <option value="Dropped">Dropped</option>
+                            </select>
+                          </div>
+
+                          {entry && (
+                            <div className="flex items-center space-x-3">
+                              <span className="text-xs text-gray-400">Watched:</span>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => handleEpisodeChange(selectedAnime.id, (entry.episodesWatched || 0) - 1)}
+                                  className="w-7 h-7 rounded bg-[#201c3b] hover:bg-purple-700 text-white flex items-center justify-center font-bold text-xs"
+                                >
+                                  -
+                                </button>
+                                <span className="text-xs font-bold text-white px-1">
+                                  {entry.episodesWatched} / {selectedAnime.totalEpisodes}
+                                </span>
+                                <button
+                                  onClick={() => handleEpisodeChange(selectedAnime.id, (entry.episodesWatched || 0) + 1)}
+                                  className="w-7 h-7 rounded bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center font-bold text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ================= GO PREMIUM MODAL ================= */}
+          {isPremiumModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-[#141126] border border-purple-800/40 rounded-3xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl relative">
+                <button
+                  onClick={() => setIsPremiumModalOpen(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                >
+                  <Icons.Close className="w-5 h-5" />
+                </button>
+
+                <div className="w-14 h-14 mx-auto rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <Icons.Crown className="w-7 h-7" />
+                </div>
+
+                <h3 className="text-xl font-black text-white">Upgrade to AniTrack PRO</h3>
+                <p className="text-xs text-gray-300">
+                  Take your tracking to the next level with exclusive PRO perks.
+                </p>
+
+                <div className="text-left space-y-2 py-2">
+                  <div className="text-xs text-gray-200 flex items-center space-x-2">
+                    <span className="text-emerald-400">✓</span>
+                    <span>Unlimited personal custom watchlists & tags</span>
+                  </div>
+                  <div className="text-xs text-gray-200 flex items-center space-x-2">
+                    <span className="text-emerald-400">✓</span>
+                    <span>Advanced analytics, hours tracked, and export to CSV/JSON</span>
+                  </div>
+                  <div className="text-xs text-gray-200 flex items-center space-x-2">
+                    <span className="text-emerald-400">✓</span>
+                    <span>Exclusive VIP badges & anime avatar frames</span>
+                  </div>
+                  <div className="text-xs text-gray-200 flex items-center space-x-2">
+                    <span className="text-emerald-400">✓</span>
+                    <span>Real-time airing push reminders for new episodes</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setUser(prev => ({ ...prev, isPremium: true }));
+                    setIsPremiumModalOpen(false);
+                    try { confetti({ particleCount: 100, spread: 70 }); }catch(e){}
+                    showToast('🎉 You are now an AniTrack PRO Member!', 'success');
+                  }}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-purple-900/50 transition"
+                >
+                  Activate PRO (Lifetime Free Demo)
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ================= AUTH MODAL (FR1) ================= */}
+          {isAuthModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-[#141126] border border-purple-800/40 rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl relative">
+                <button
+                  onClick={() => setIsAuthModalOpen(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                >
+                  <Icons.Close className="w-5 h-5" />
+                </button>
+
+                <h3 className="text-xl font-black text-white text-center">
+                  {authMode === 'login' ? 'Sign In to AniTrack' : 'Create an Account'}
+                </h3>
+                <p className="text-xs text-gray-400 text-center">
+                  {authMode === 'login' ? 'Enter your credentials to manage your watchlist' : 'Join thousands of anime fans tracking progress'}
+                </p>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const name = e.target.username.value || 'Harish';
+                    setUser({
+                      username: name,
+                      displayName: name,
+                      avatar: './assets/avatar.png',
+                      email: `${name.toLowerCase()}@anitrack.io`,
+                      isPremium: false
+                    });
+                    setIsAuthModalOpen(false);
+                    showToast(`Signed in as ${name}!`, 'success');
+                  }}
+                  className="space-y-3"
+                >
+                  <div>
+                    <label className="text-[11px] font-semibold text-gray-300">Username</label>
+                    <input
+                      name="username"
+                      defaultValue="Harish"
+                      required
+                      className="mt-1 w-full px-3 py-2 bg-[#1b1735] border border-[#2e265c] rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-gray-300">Password</label>
+                    <input
+                      type="password"
+                      defaultValue="password123"
+                      required
+                      className="mt-1 w-full px-3 py-2 bg-[#1b1735] border border-[#2e265c] rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="mt-4 w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition"
+                  >
+                    {authMode === 'login' ? 'Sign In' : 'Register'}
+                  </button>
+                </form>
+
+                <div className="text-center pt-2">
+                  <button
+                    onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                    className="text-xs text-purple-400 hover:underline"
+                  >
+                    {authMode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
